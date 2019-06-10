@@ -103,6 +103,7 @@ public class IntentLauncherModule extends ExportedModule implements ModuleRegist
 
     mUIManager.registerActivityEventListener(this);
     mPendingPromise = promise;
+    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
     activity.startActivityForResult(intent, REQUEST_CODE);
   }
 

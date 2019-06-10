@@ -1,10 +1,12 @@
 package expo.modules.filesystem;
 
+import android.app.Application;
 import android.content.Context;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.content.FileProvider;
 import android.util.Base64;
 import android.util.Log;
 
@@ -15,6 +17,7 @@ import org.apache.commons.io.IOUtils;
 import org.unimodules.core.ExportedModule;
 import org.unimodules.core.ModuleRegistry;
 import org.unimodules.core.Promise;
+import org.unimodules.core.interfaces.ActivityProvider;
 import org.unimodules.core.interfaces.ExpoMethod;
 import org.unimodules.core.interfaces.ModuleRegistryConsumer;
 import org.unimodules.core.interfaces.services.EventEmitter;
@@ -519,6 +522,36 @@ public class FileSystemModule extends ExportedModule implements ModuleRegistryCo
   }
 
   @ExpoMethod
+  public void contentUriFromFile(String uri, Promise promise){
+    try{
+      final Uri fileUri = Uri.parse(uri);
+      ensurePermission(fileUri, Permission.WRITE);
+      ensurePermission(fileUri, Permission.READ);
+      checkIfFileDirExists(fileUri);
+      if("file".equals(fileUri.getScheme())){
+        File file = uriToFile(fileUri);
+        Bundle result = new Bundle();
+        result.putString("uri", cUriFromFile(file).toString());
+        promise.resolve(result);
+      }
+
+    }
+    catch (Exception e) {
+      Log.e(TAG, e.getMessage());
+      promise.reject(e);
+    }
+  }
+
+  private Uri cUriFromFile(File file) {
+    try {
+      Application application = mModuleRegistry.getModule(ActivityProvider.class).getCurrentActivity().getApplication();
+      return FileProvider.getUriForFile(application, application.getPackageName() + ".provider", file);
+    } catch (Exception e) {
+      return Uri.fromFile(file);
+    }
+  }
+
+  @ExpoMethod
   public void downloadResumableStartAsync(String url, final String fileUriStr, final String uuid, final Map<String, Object> options, final String resumeData, final Promise promise) {
     try {
       final Uri fileUri = Uri.parse(fileUriStr);
@@ -618,6 +651,7 @@ public class FileSystemModule extends ExportedModule implements ModuleRegistryCo
       promise.reject(e);
     }
   }
+
 
   private static byte[] getInputStreamBytes(InputStream inputStream) throws IOException {
     byte[] bytesResult;
